@@ -267,6 +267,88 @@ try {
         adminProfilePicUrl = await sock.profilePictureUrl(promotedParticipantJid, 'image');
     } catch (e) {
         console.log(`[PROMOTE] No se pudo obtener la foto de perfil para ${promotedParticipantJid.split('@')[0]}: ${e.message}`);
+// ... (código anterior) ...
+
+               // 𝙲𝙾𝙽𝙴𝚇𝙸𝙾𝙽 
+        // 𝙱𝙸𝙴𝙽𝚅𝙴𝙽𝙸𝙳𝙰 𝚈 𝙳𝙴𝚂𝙿𝙴𝙳𝙸𝙳𝙰 
+sock.ev.on("group-participants.update", async (anu) => {
+// Verifica si el ID del grupo está en la lista de grupos con bienvenida activa
+if(!welkom.includes(anu.id)) return;
+
+try {
+  const metadata = await sock.groupMetadata(anu.id);
+  const affectedParticipantJid = anu.participants[0]; // El JID del usuario afectado
+
+  if(anu.action == 'add') {
+    const grup = metadata.subject; // Nombre del grupo
+    const mem = metadata.participants.length; // Cantidad de miembros actuales
+
+    const sol = `
+✦━─⌬༓༒༓⌬─━✦
+*✧༺ 𝑩𝒊𝒆𝒏𝒗𝒆𝒏𝒊𝒅𝒐/𝒂 ✦༻✧*
+
+💌 「 Hola @${affectedParticipantJid.split('@')[0]} 🌟 y bienvenido/a al reino de *${grup}* 」
+🥂 Que tu estancia esté llena de risas, buena charla 🗨 y alguna que otra copa de hidromiel 🍯🍺
+
+📜 Recuerda echarle un ojo a nuestras reglas para no invocar a los dragones 🐉🔥
+ 
+『 👥 Miembros actuales: ${mem} 』
+✦━─⌬༓༒༓⌬─━✦
+`;
+
+    let profilePicUrl;
+    try {
+        console.log(`[DEBUG BIENVENIDA] Intentando obtener foto de perfil para: ${affectedParticipantJid}`);
+        // Intenta obtener la foto de perfil del usuario que se unió
+        profilePicUrl = await sock.profilePictureUrl(affectedParticipantJid, 'image');
+        console.log(`[DEBUG BIENVENIDA] URL obtenida para ${affectedParticipantJid.split('@')[0]}: ${profilePicUrl}`);
+
+        // Validación extra: Si la URL es indefinida o null, o si es una cadena vacía,
+        // esto significa que no se pudo obtener una foto de perfil válida.
+        if (!profilePicUrl || profilePicUrl === "") {
+            console.log(`[DEBUG BIENVENIDA] No se obtuvo una URL válida. Usando imagen predeterminada.`);
+            profilePicUrl = "https://i.ibb.co/HDf3hw9J/20250702-214923.jpg"; // Tu imagen predeterminada de respaldo
+        }
+
+    } catch (e) {
+        // Si hay un error (ej. el usuario no tiene foto de perfil pública), se usará la predeterminada
+        console.error(`[DEBUG BIENVENIDA] Error al obtener la foto de perfil para ${affectedParticipantJid.split('@')[0]}: ${e.message}`);
+        profilePicUrl = "https://i.ibb.co/HDf3hw9J/20250702-214923.jpg"; // Tu imagen predeterminada de respaldo
+    }
+
+    await sock.sendMessage(anu.id, {
+      image: { url: profilePicUrl }, // Usamos la URL de la foto de perfil (o la predeterminada)
+      caption: sol,
+      mentions: [affectedParticipantJid]  // La mención real del participante
+    });
+  }
+
+  if (anu.action == 'promote') {
+    const promotedParticipantJid = anu.participants[0];    
+    const teks = `
+✦━─┈༓༒༓┈─━✦
+
+     *✧༺ 𝓝𝓾𝓮𝓿𝓸 𝓐𝓭𝓶𝓲𝓷 ༻✧*
+
+🪪 𝗡𝗼𝗺𝗯𝗿𝗲: @${promotedParticipantJid.split('@')[0]}
+🌐 𝗚𝗿𝘂𝗽𝗼: ${metadata.subject}
+💌 「 ¡Enhorabuena! 🎉 Has ascendido a la mesa de los administradores 🪄 」
+
+✦━─┈༓༒༓┈─━✦
+`;
+    // También puedes intentar obtener la foto de perfil para el mensaje de promoción
+    let adminProfilePicUrl;
+    try {
+        console.log(`[DEBUG PROMOTE] Intentando obtener foto de perfil para nuevo admin: ${promotedParticipantJid}`);
+        adminProfilePicUrl = await sock.profilePictureUrl(promotedParticipantJid, 'image');
+        console.log(`[DEBUG PROMOTE] URL obtenida para ${promotedParticipantJid.split('@')[0]}: ${adminProfilePicUrl}`);
+
+        if (!adminProfilePicUrl || adminProfilePicUrl === "") {
+             console.log(`[DEBUG PROMOTE] No se obtuvo una URL válida para admin. Usando imagen predeterminada.`);
+            adminProfilePicUrl = "https://i.postimg.cc/DwL7Hzbs/20250812-103108.jpg"; // Tu imagen predeterminada para admins
+        }
+    } catch (e) {
+        console.error(`[DEBUG PROMOTE] Error al obtener la foto de perfil para ${promotedParticipantJid.split('@')[0]}: ${e.message}`);
         adminProfilePicUrl = "https://i.postimg.cc/DwL7Hzbs/20250812-103108.jpg"; // Tu imagen predeterminada para admins
     }
     await sock.sendMessage(anu.id, {
@@ -277,13 +359,11 @@ try {
   }
 
 } catch(e) {
-  console.error('Error en el evento group-participants.update: %s', color(e, "red"));
-  // Aquí podrías enviar un mensaje de error al grupo o al owner si lo consideras necesario.
+  console.error('Error general en el evento group-participants.update: %s', color(e, "red"));
 }
 });
 
 // ... (resto de tu código) ...
-
 //Bienvenida y despedidas
 
 sock.ev.on('creds.update', saveCreds)
