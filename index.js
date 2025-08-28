@@ -37,7 +37,7 @@ const chalk = require('chalk')
 const color = (text, color) => { return !color ? chalk.green(text) : chalk.keyword(color)(text) };
  
  //baner
-const banner = cfonts.render(MAFIA|BOT", {
+const banner = cfonts.render(MAFIA| Bot| base", {
   font: 'pallet',
   align: 'center',
   gradient: ["green","blue"]
