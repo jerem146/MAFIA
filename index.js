@@ -199,58 +199,90 @@ sock.ev.on('connection.update', (update) => {
     
                // 𝙲𝙾𝙽𝙴𝚇𝙸𝙾𝙽 
         // 𝙱𝙸𝙴𝙽𝚅𝙴𝙽𝙸𝙳𝙰 𝚈 𝙳𝙴𝚂𝙿𝙴𝙳𝙸𝙳𝙰 
+// ... (código anterior) ...
+
+               // 𝙲𝙾𝙽𝙴𝚇𝙸𝙾𝙽 
+        // 𝙱𝙸𝙴𝙽𝚅𝙴𝙽𝙸𝙳𝙰 𝚈 𝙳𝙴𝚂𝙿𝙴𝙳𝙸𝙳𝙰 
 sock.ev.on("group-participants.update", async (anu) => {
-if(!welkom.includes(anu.id)) return
+// Verifica si el ID del grupo está en la lista de grupos con bienvenida activa
+if(!welkom.includes(anu.id)) return;
+
 try {
-const metadata = await sock.groupMetadata(anu.id)
-  participants = anu.participants
-  for (let num of participants){
- 
-if(anu.action == 'add') {
-const grup = metadata.subject
-const num = anu.participants[0]
-const mem = metadata.participants.length
-const descr = metadata.desc
-const sol = `
+  const metadata = await sock.groupMetadata(anu.id);
+  // 'anu.participants' es un array que contiene los JIDs de los participantes afectados por el evento.
+  // Para 'add' o 'promote', normalmente es solo el primer elemento.
+  const affectedParticipantJid = anu.participants[0];
+
+  if(anu.action == 'add') {
+    const grup = metadata.subject; // Nombre del grupo
+    const mem = metadata.participants.length; // Cantidad de miembros actuales
+    // const descr = metadata.desc; // Esta variable no se usa, puedes eliminarla
+
+    const sol = `
 ✦━─⌬༓༒༓⌬─━✦
 *✧༺ 𝑩𝒊𝒆𝒏𝒗𝒆𝒏𝒊𝒅𝒐/𝒂 ✦༻✧*
 
-💌 「 Hola @${num.split('@')[0]} 🌟 y bienvenido/a al reino de *${grup}* 」
+💌 「 Hola @${affectedParticipantJid.split('@')[0]} 🌟 y bienvenido/a al reino de *${grup}* 」
 🥂 Que tu estancia esté llena de risas, buena charla 🗨 y alguna que otra copa de hidromiel 🍯🍺
 
 📜 Recuerda echarle un ojo a nuestras reglas para no invocar a los dragones 🐉🔥
  
 『 👥 Miembros actuales: ${mem} 』
 ✦━─⌬༓༒༓⌬─━✦
-`
+`;
 
-await sock.sendMessage(anu.id, {
-  image: { url: "https://i.ibb.co/HDf3hw9J/20250702-214923.jpg" },
-  caption: sol,
-  mentions: [num]  // 👈 Aquí haces la mención real
-})
-}
-if (anu.action == 'promote') {
-    num = anu.participants[0]    
-    teks = `
+    let profilePicUrl;
+    try {
+        // Intenta obtener la foto de perfil del usuario que se unió
+        profilePicUrl = await sock.profilePictureUrl(affectedParticipantJid, 'image');
+    } catch (e) {
+        // Si no tiene foto de perfil o hay un error al obtenerla, usa una imagen predeterminada
+        console.log(`[BIENVENIDA] No se pudo obtener la foto de perfil para ${affectedParticipantJid.split('@')[0]}: ${e.message}`);
+        profilePicUrl = "https://i.ibb.co/HDf3hw9J/20250702-214923.jpg"; // Tu imagen predeterminada de respaldo
+    }
+
+    await sock.sendMessage(anu.id, {
+      image: { url: profilePicUrl }, // Usamos la URL de la foto de perfil (o la predeterminada)
+      caption: sol,
+      mentions: [affectedParticipantJid]  // La mención real del participante
+    });
+  }
+
+  if (anu.action == 'promote') {
+    const promotedParticipantJid = anu.participants[0];    
+    const teks = `
 ✦━─┈༓༒༓┈─━✦
 
      *✧༺ 𝓝𝓾𝓮𝓿𝓸 𝓐𝓭𝓶𝓲𝓷 ༻✧*
 
-🪪 𝗡𝗼𝗺𝗯𝗿𝗲: @${num.split('@')[0]}
+🪪 𝗡𝗼𝗺𝗯𝗿𝗲: @${promotedParticipantJid.split('@')[0]}
 🌐 𝗚𝗿𝘂𝗽𝗼: ${metadata.subject}
 💌 「 ¡Enhorabuena! 🎉 Has ascendido a la mesa de los administradores 🪄 」
 
 ✦━─┈༓༒༓┈─━✦
-`
-  await sock.sendMessage(anu.id,{image : { url : "https://i.postimg.cc/DwL7Hzbs/20250812-103108.jpg" }, caption : teks})
+`;
+    // También puedes intentar obtener la foto de perfil para el mensaje de promoción
+    let adminProfilePicUrl;
+    try {
+        adminProfilePicUrl = await sock.profilePictureUrl(promotedParticipantJid, 'image');
+    } catch (e) {
+        console.log(`[PROMOTE] No se pudo obtener la foto de perfil para ${promotedParticipantJid.split('@')[0]}: ${e.message}`);
+        adminProfilePicUrl = "https://i.postimg.cc/DwL7Hzbs/20250812-103108.jpg"; // Tu imagen predeterminada para admins
     }
+    await sock.sendMessage(anu.id, {
+        image : { url : adminProfilePicUrl }, // Usa la URL de la foto de perfil del nuevo admin (o la predeterminada)
+        caption : teks,
+        mentions: [promotedParticipantJid] // Asegúrate de mencionar al admin
+    });
+  }
 
-} 
-}catch(e) {
-console.log('Error: %s', color(e, "red"))
+} catch(e) {
+  console.error('Error en el evento group-participants.update: %s', color(e, "red"));
+  // Aquí podrías enviar un mensaje de error al grupo o al owner si lo consideras necesario.
 }
-})
+});
+
+// ... (resto de tu código) ...
 
 //Bienvenida y despedidas
 
